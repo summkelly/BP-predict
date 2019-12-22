@@ -1,0 +1,87 @@
+import tensorflow as tf 
+from  tensorflow.examples.tutorials.mnist  import  input_data
+import numpy as np 
+import pandas as pd
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score
+
+dataset = pd.read_csv('/Users/wang859923/Desktop/明星数据.csv', delimiter=",")
+x=np.array(dataset)
+x
+
+
+dataset = pd.read_csv('/Users/wang859923/Desktop/婚姻状态.csv', delimiter=",")
+y=np.array(dataset)
+y
+
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+train= np.column_stack((x_train,y_train))
+test = np.column_stack((x_test, y_test))
+
+num_classes = 1  # 输出大小
+input_size = 17  # 输入大小
+hidden_units_size = 5  # 隐藏层节点数量
+batch_size = 10
+training_iterations = 10
+
+设置占位符
+X = tf.placeholder(tf.float32, shape = [None, input_size])
+Y = tf.placeholder(tf.float32, shape = [None,num_classes])
+keep_prob = tf.placeholder(tf.float32)
+
+#搭建三层神经网络: 2层hidden layer
+W1 = tf.Variable(tf.random_normal ([input_size, hidden_units_size], stddev = 0.1))
+B1 = tf.Variable(tf.constant (0.1), [hidden_units_size])
+W2 = tf.Variable(tf.random_normal ([hidden_units_size, hidden_units_size], stddev = 0.1))
+B2 = tf.Variable(tf.constant (0.1), [hidden_units_size])
+W3 = tf.Variable(tf.random_normal ([hidden_units_size, num_classes], stddev = 0.1))
+B3 = tf.Variable(tf.constant (0.1), [num_classes])
+
+hidden_opt1 = tf.matmul(X, W1) + B1  # 输入层到隐藏层1正向传播
+hidden_opt1 = tf.nn.dropout(hidden_opt1,keep_prob)  #dropout掉部分的结果
+hidden_opt1 = tf.nn.relu(hidden_opt1)  # 激活函数，用于计算节点输出值
+
+hidden_opt2 = tf.matmul(hidden_opt1, W2) + B2  # 隐藏层1到隐藏层2正向传播
+hidden_opt2 = tf.nn.dropout(hidden_opt2,keep_prob)  #dropout掉部分的结果
+hidden_opt2 = tf.nn.relu(hidden_opt2)  # 激活函数，用于计算节点输出值
+
+final_opt = tf.matmul(hidden_opt2, W3) + B3  # 隐藏层到输出层正向传播
+final_opt = tf.nn.dropout(final_opt,keep_prob)  #dropout掉部分的结果
+final_opt =tf.nn.sigmoid(final_opt) #通过sigmoud函数映射成为(0,1)之间值，表示概率
+
+
+# 对输出层计算交叉熵损失
+loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=Y, logits=final_opt))
+# 梯度下降算法，这里使用了反向传播算法用于修改权重，减小损失
+opt = tf.train.GradientDescentOptimizer(0.05).minimize(loss)
+# 初始化变量
+init = tf.global_variables_initializer()
+# 计算准确率
+correct_prediction =tf.equal (tf.argmax (Y, 1), tf.argmax(final_opt, 1))
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, 'float'))
+
+sess = tf.Session ()
+sess.run (init)
+    
+for i in range (training_iterations) :
+    # 训练
+    training_loss = sess.run ([opt, loss], feed_dict = {X: x_train, Y: y_train,keep_prob: 0.5})
+    train_accuracy = accuracy.eval (session = sess, feed_dict = {X: x_train,Y: y_train,keep_prob: 1})
+    print ("step : %d, training accuracy = %g " % (i, train_accuracy))
+    tf.argmax(final_opt, 1)
+    writer=tf.summary.FileWriter(r"./path/to/log",tf.get_default_graph())
+    writer.close()
+x_predict = pd.read_csv('/Users/wang859923/Desktop/预测.csv', delimiter=",")
+x_predict = np.array(x_predict)
+x_predict
+
+
+# prediction_value = sess.run(final_opt, feed_dict = {X: x_test, keep_prob: 1})
+# prediction_value
+
+prediction_value = sess.run(final_opt, feed_dict = {X: x_predict, keep_prob: 1})
+prediction_value
+
+ 
